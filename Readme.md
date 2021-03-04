@@ -40,7 +40,7 @@ Upload AutoCURDelivery.zip to your S3 bucket. Make sure this S3 path is in the s
 
 
 ## Deployment
-``` aws cloudformation update-stack --stack-name rightsizesharesolution --template-body file://sample-solution.yaml --capabilities CAPABILITY_NAMED_IAM --parameters file://parameter.json```
+``` aws cloudformation create-stack --stack-name rightsizesharesolution --template-body file://sample-solution.yaml --capabilities CAPABILITY_NAMED_IAM --parameters file://parameter.json```
 
 ### Follow up
 
