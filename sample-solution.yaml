@@ -1,0 +1,77 @@
+---
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Rightsizer collector and connection to org data
+Parameters:
+  CrawlerName:
+    Type: String
+    Default: crawl-rightsizing-recommendations
+    Description: Name of the AWS crawler to be created
+    AllowedPattern: ^.*[^0-9]$
+    ConstraintDescription: Must end with non-numeric character.
+  DestinationBucket:
+    Type: String
+    Description: Name of the S3 Bucket that exists or needs to be created to hold rightsizing information
+    AllowedPattern: (?=^.{3,63}$)(?!^(\d+\.)+\d+$)(^(([a-z0-9]|[a-z0-9][a-z0-9\-]*[a-z0-9])\.)*([a-z0-9]|[a-z0-9][a-z0-9\-]*[a-z0-9])$)
+  DestinationPrefix:
+    Type: String
+    Description: Name of the folder/prefix for rightsizing information to be stored in
+    Default: rightsizing
+  RoleName:
+    Type: String
+    Description: ARN of the IAM role deployed in the management accounts which can retrieve AWS Cost Explorer rightsizing information.
+  Tags:
+    Type: String
+    Description: List of tags from your Organisation you would like to include separated by a comma.
+  CodeBucket:
+    Type: String
+    Description:  Name of the S3 Bucket that exists and holds the code for the athena emailer function
+Resources:
+  RightsizeStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      Parameters:
+        CrawlerName: !Ref CrawlerName
+        DestinationBucket: !Ref DestinationBucket
+        DestinationPrefix: !Ref DestinationPrefix
+        RoleName: !Ref RoleName
+      TemplateURL: https://s3-eu-west-1.amazonaws.com/optics-benchmarking-bucket/cloudformation/organization_rightsizing_lambda.yaml
+      TimeoutInMinutes: 5
+  OrgStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: https://s3-eu-west-1.amazonaws.com/optics-benchmarking-bucket/cloudformation/org.yaml
+      TimeoutInMinutes: 2
+      Parameters:
+        RoleName: !Ref RoleName
+        GlueCrawlerRole: !GetAtt 'RightsizeStack.Outputs.GlueCrawlerRoleARN'
+        LambdaRoleARN: !GetAtt 'RightsizeStack.Outputs.CostExplorerRightsizingLambdaRoleARN'
+        DestinationBucket: !GetAtt 'RightsizeStack.Outputs.S3Bucket'
+        Tags: !Ref Tags
+  Emailer:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      Parameters:
+        DestinationBucketARN: !GetAtt 'RightsizeStack.Outputs.S3BucketARN'
+        CodeBucket: !Ref CodeBucket
+      TemplateURL: https://s3-eu-west-1.amazonaws.com/optics-benchmarking-bucket/cloudformation/athena_emailer.yaml
+      TimeoutInMinutes: 5
+  CloudWatchTrigger:
+    Type: AWS::Events::Rule
+    Properties:
+      Description: Weekly Notificaton Event for Rightsizing Recommendations
+      Name: Rightsizing-Recommendations-Weekly-Scheduler
+      ScheduleExpression: "rate(7 days)"
+      State: ENABLED
+      Targets:
+        - Arn:
+            !GetAtt 'RightsizeStack.Outputs.LambdaCostExplorerRightsizingARN'
+          Id: WeeklyTriggerForEBSUtilization
+        - Arn:
+            !GetAtt 'OrgStack.Outputs.LambdaFunctionARN'
+          Id: WeeklyTriggerForOrgdata
+Outputs:
+  CostExplorerRightsizingLambdaRoleARN:
+    Value: !GetAtt 'RightsizeStack.Outputs.CostExplorerRightsizingLambdaRoleARN'
+  LambdaCostExplorerRightsizingARN:
+    Value: !GetAtt 'RightsizeStack.Outputs.LambdaCostExplorerRightsizingARN'
+

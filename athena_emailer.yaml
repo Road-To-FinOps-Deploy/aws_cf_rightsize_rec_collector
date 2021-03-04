@@ -1,0 +1,95 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Emails athena results 
+Parameters:
+  DestinationBucketARN:
+    Type: String
+    Description: Name of the S3 Bucket that exists or needs to be created to hold rightsizing information
+  CodeBucket:
+    Type: String
+    Description: Name of the S3 Bucket that exists and holds the code for the athena emailer function
+    AllowedPattern: (?=^.{3,63}$)(?!^(\d+\.)+\d+$)(^(([a-z0-9]|[a-z0-9][a-z0-9\-]*[a-z0-9])\.)*([a-z0-9]|[a-z0-9][a-z0-9\-]*[a-z0-9])$)
+
+Outputs:
+  AthenaEmailerLambdaRole:
+    Description: Role for Lambda execution of AWS Cost Explorer Rightsizing recommendations.
+    Value:
+      Fn::GetAtt:
+        - AthenaEmailerLambdaRole
+        - Arn
+  AthenaEmailerLambdaFunction:
+    Description: Lambda function ARN for retrieving AWS Cost Explorer Rightsizing recommendations
+    Value:
+      Fn::GetAtt:
+        - AthenaEmailerLambdaFunction
+        - Arn
+Resources:
+  AthenaEmailerLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: aws-athena-emailer-role
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action:
+              - sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+        Version: 2012-10-17
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AWSLambdaExecute
+      Path: /
+      Policies:
+        - PolicyName: "Athena-Emailer"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: "Allow"
+                Action:
+                  - "s3:PutObject"
+                Resource: !Ref DestinationBucketARN
+              - Effect: "Allow"
+                Action:
+                 - "athena:List*"
+                 - "athena:*QueryExecution"
+                 - "athena:Get*"
+                 - "athena:BatchGet*"
+                 - "glue:Get*"
+                 - "glue:BatchGet*"
+                 - "s3:Get*"
+                 - "s3:List*"
+                 - "SES:SendRawEmail"
+                 - "SES:SendEmail"
+                 - "logs:CreateLogStream"
+                 - "logs:CreateLogGroup"
+                 - "logs:PutLogEvents"
+                Resource: "*"
+  AthenaEmailerLambdaFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: aws-athena-emailer-function
+      Description: LambdaFunction to retreive email athen query results
+      Runtime: python3.7
+      Code:
+       S3Key: code/AutoCURDelivery.zip
+       S3Bucket: !Ref CodeBucket
+      Handler: 'auto_cur_delivery.lambda_handler'
+      MemorySize: 2688
+      Timeout: 300
+      Role:
+        Fn::GetAtt:
+          - AthenaEmailerLambdaRole
+          - Arn
+  CloudWatchTrigger:
+    Type: AWS::Events::Rule
+    Properties:
+      Description: Weekly Notificaton Event for athena resulys
+      Name: Athena-Emailer-Weekly-Scheduler
+      ScheduleExpression: "rate(7 days)"
+      State: ENABLED
+      Targets:
+        - Arn:
+            Fn::GetAtt:
+            - AthenaEmailerLambdaFunction
+            - Arn
+          Id: WeeklyTriggerForEmailer
