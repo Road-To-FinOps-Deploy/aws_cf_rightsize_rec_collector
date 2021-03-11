@@ -1,26 +1,26 @@
 [
     {
       "ParameterKey": "CrawlerName",
-      "ParameterValue": "crawl-rightsizing-recommendations"
+      "ParameterValue": ""
     }, 
     {
       "ParameterKey": "DestinationBucket",
-      "ParameterValue": "<name for new S3 bucket>"
+      "ParameterValue": ""
     }, 
     {
       "ParameterKey": "DestinationPrefix",
-      "ParameterValue": "rightsizing"
+      "ParameterValue": ""
     }, 
     {
       "ParameterKey": "RoleName",
-      "ParameterValue": "<mgmt_account_arn>"
+      "ParameterValue": ""
     }, 
     {
       "ParameterKey": "Tags",
-      "ParameterValue": "<Org tags you would like to bring in>"
+      "ParameterValue": ""
     }, 
     {
       "ParameterKey": "CodeBucket",
-      "ParameterValue": "<Code bucket>"
+      "ParameterValue": ""
     }
   ]
