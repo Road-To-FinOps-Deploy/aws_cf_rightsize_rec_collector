@@ -1,4 +1,5 @@
 ---
+#Replace  <CodeBucket> with your code bucket param name
 AWSTemplateFormatVersion: '2010-09-09'
 Description: Main CF template that builds shared resources and other stacks
 Parameters:
@@ -31,13 +32,6 @@ Resources:
     Properties:
       BucketName:
         Ref: DestinationBucket
-  # SharedResource:
-  #   Type: AWS::CloudFormation::Stack
-  #   Properties:
-  #     Parameters:
-  #       DestinationBucket: !Ref DestinationBucket
-  #     TemplateURL: https://s3-eu-west-1.amazonaws.com/optics-benchmarking-bucket/cloudformation/shared_resource.yaml
-  #     TimeoutInMinutes: 5
   RightsizeStack:
     Type: AWS::CloudFormation::Stack
     Properties:
@@ -47,12 +41,12 @@ Resources:
         DestinationBucketARN: !GetAtt S3Bucket.Arn 
         DestinationPrefix: !Ref DestinationPrefix
         RoleName: !Ref RoleName
-      TemplateURL: https://s3-eu-west-1.amazonaws.com/optics-benchmarking-bucket/cloudformation/organization_rightsizing_lambda.yaml
+      TemplateURL: https://s3-eu-west-1.amazonaws.com/<CodeBucket>/cloudformation/organization_rightsizing_lambda.yaml
       TimeoutInMinutes: 5
   OrgStack:
     Type: AWS::CloudFormation::Stack
     Properties:
-      TemplateURL: https://s3-eu-west-1.amazonaws.com/optics-benchmarking-bucket/cloudformation/org.yaml
+      TemplateURL: https://s3-eu-west-1.amazonaws.com/<CodeBucket>/cloudformation/org.yaml
       TimeoutInMinutes: 2
       Parameters:
         RoleName: !Ref RoleName
@@ -69,7 +63,7 @@ Resources:
           - S3Bucket
           - Arn 
         CodeBucket: !Ref CodeBucket
-      TemplateURL: https://s3-eu-west-1.amazonaws.com/optics-benchmarking-bucket/cloudformation/athena_emailer.yaml
+      TemplateURL: https://s3-eu-west-1.amazonaws.com/<CodeBucket>/cloudformation/athena_emailer.yaml
       TimeoutInMinutes: 5
   CloudWatchTrigger:
     Type: AWS::Events::Rule
