@@ -11,6 +11,9 @@ Parameters:
     Type: String
     Description: Name of the S3 Bucket that exists or needs to be created to hold rightsizing information
     AllowedPattern: (?=^.{3,63}$)(?!^(\d+\.)+\d+$)(^(([a-z0-9]|[a-z0-9][a-z0-9\-]*[a-z0-9])\.)*([a-z0-9]|[a-z0-9][a-z0-9\-]*[a-z0-9])$)
+  DestinationBucketARN:
+    Type: String
+    Description: ARN of the S3 Bucket that exists or needs to be created to hold rightsizing information
   DestinationPrefix:
     Type: String
     Description: Name of the folder/prefix for rightsizing information to be stored in
@@ -31,16 +34,6 @@ Outputs:
       Fn::GetAtt:
         - LambdaFunction
         - Arn
-  S3Bucket:
-    Description: Name of S3 Bucket which will store the AWS Cost Explorer Rightsizing recommendations
-    Value:
-      Ref: S3Bucket
-  S3BucketARN:
-    Description: ARN of S3 Bucket which will store the AWS Cost Explorer Rightsizing recommendations
-    Value:
-       Fn::GetAtt:
-        - S3Bucket
-        - Arn 
   GlueCrawler:
     Value:
       Ref: RightsizingCrawler
@@ -50,11 +43,7 @@ Outputs:
         - RightsizingGlueRole
         - Arn
 Resources:
-  S3Bucket:
-    Type: 'AWS::S3::Bucket'
-    Properties:
-      BucketName:
-        Ref: DestinationBucket
+
   RightsizingLambdaRole:
     Type: AWS::IAM::Role
     Properties:
@@ -87,10 +76,7 @@ Resources:
               - Effect: "Allow"
                 Action:
                   - "s3:PutObject"
-                Resource:
-                  Fn::GetAtt:
-                    - S3Bucket
-                    - Arn
+                Resource: !Ref DestinationBucketARN
               - Effect: "Allow"
                 Action:
                   - "glue:StartCrawler"
@@ -127,13 +113,7 @@ Resources:
                 Action:
                   - "s3:PutObject"
                   - "s3:GetObject"
-                Resource:
-                  Fn::Join:
-                    - ''
-                    - - Fn::GetAtt:
-                          - S3Bucket
-                          - Arn
-                      - "*"
+                Resource: !Sub "${DestinationBucketARN}*"
   LambdaFunction:
     Type: AWS::Lambda::Function
     Properties:
