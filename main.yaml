@@ -79,7 +79,22 @@ Resources:
         - Arn:
             !GetAtt 'OrgStack.Outputs.LambdaFunctionARN'
           Id: WeeklyTriggerForOrgdata
-  
+  OrgEventPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !GetAtt 'OrgStack.Outputs.LambdaFunctionARN'
+      Action: lambda:InvokeFunction
+      Principal: events.amazonaws.com
+      SourceAccount: !Ref 'AWS::AccountId'
+      SourceArn: !GetAtt CloudWatchTrigger.Arn
+  RightEventPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !GetAtt 'RightsizeStack.Outputs.LambdaCostExplorerRightsizingARN'
+      Action: lambda:InvokeFunction
+      Principal: events.amazonaws.com
+      SourceAccount: !Ref 'AWS::AccountId'
+      SourceArn: !GetAtt CloudWatchTrigger.Arn
 Outputs:
   CostExplorerRightsizingLambdaRoleARN:
     Value: !GetAtt 'RightsizeStack.Outputs.CostExplorerRightsizingLambdaRoleARN'
